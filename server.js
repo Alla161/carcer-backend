@@ -6,8 +6,9 @@ import 'dotenv/config';
 
 const app = express();
 
-// CORS: на этапе разработки просто разрешаем все origin
+
 app.use(cors());
+app.options('*', cors());
 
 app.use(bodyParser.json());
 
