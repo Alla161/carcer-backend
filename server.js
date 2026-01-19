@@ -6,10 +6,8 @@ import 'dotenv/config';
 
 const app = express();
 
-// Разрешаем запросы с твоего фронта (локально и, при желании, прод-урл)
-app.use(cors({
-  origin: ['http://localhost:5174'], // сюда потом можно добавить прод-URL фронта
-}));
+// CORS: на этапе разработки просто разрешаем все origin
+app.use(cors());
 
 app.use(bodyParser.json());
 
@@ -18,6 +16,7 @@ const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 
 const userChats = new Map();
 
+// Вебхук от Telegram
 app.post(`/api/telegram/${TELEGRAM_TOKEN}`, async (req, res) => {
   const update = req.body;
   const message = update.message || update.edited_message;
@@ -50,12 +49,15 @@ app.post(`/api/telegram/${TELEGRAM_TOKEN}`, async (req, res) => {
   res.sendStatus(200);
 });
 
+// Эндпоинт для отправки уведомлений из фронта
 app.post('/api/notify-telegram', async (req, res) => {
   const { userId, text } = req.body;
 
   const chatId = userChats.get(userId);
   if (!chatId) {
-    return res.status(400).json({ error: 'Нет сохранённого chat_id для этого пользователя' });
+    return res.status(400).json({
+      error: 'Нет сохранённого chat_id для этого пользователя',
+    });
   }
 
   await axios.post(`${TELEGRAM_API}/sendMessage`, {
