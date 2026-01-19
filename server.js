@@ -8,7 +8,7 @@ const app = express();
 
 // Разрешаем запросы с твоего фронта (локально и, при желании, прод-урл)
 app.use(cors({
-  origin: ['http://localhost:5173'], // сюда потом можно добавить прод-URL фронта
+  origin: ['http://localhost:5174'], // сюда потом можно добавить прод-URL фронта
 }));
 
 app.use(bodyParser.json());
