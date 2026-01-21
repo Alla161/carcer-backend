@@ -3,14 +3,17 @@ import bodyParser from 'body-parser';
 import axios from 'axios';
 import cors from 'cors';
 import 'dotenv/config';
+import nodemailer from 'nodemailer';
+
 
 const app = express();
-
 
 app.use(cors());
 app.options('*', cors());
 
 app.use(bodyParser.json());
+
+// ================== TELEGRAM ==================
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
@@ -50,7 +53,7 @@ app.post(`/api/telegram/${TELEGRAM_TOKEN}`, async (req, res) => {
   res.sendStatus(200);
 });
 
-// Эндпоинт для отправки уведомлений из фронта
+// Эндпоинт для отправки уведомлений из фронта (Telegram)
 app.post('/api/notify-telegram', async (req, res) => {
   const { userId, text } = req.body;
 
@@ -68,6 +71,48 @@ app.post('/api/notify-telegram', async (req, res) => {
 
   res.json({ ok: true });
 });
+
+// ================== EMAIL (Yandex SMTP) ==================
+
+const mailTransporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,        // smtp.yandex.ru
+  port: Number(process.env.SMTP_PORT),// 465
+  secure: true,                       // для 465
+  auth: {
+    user: process.env.SMTP_USER,      // all.kuprik@yandex.ru
+    pass: process.env.SMTP_PASS,      // пароль приложения
+  },
+});
+
+async function sendEmail({ to, subject, text, html }) {
+  await mailTransporter.sendMail({
+    from: process.env.SMTP_FROM,      // all.kuprik@yandex.ru
+    to,
+    subject,
+    text,
+    html,
+  });
+}
+
+// Эндпоинт для отправки email из фронта
+app.post('/api/send-email', async (req, res) => {
+  try {
+    const { to, subject, text, html } = req.body;
+
+    if (!to || !subject || (!text && !html)) {
+      return res.status(400).json({ error: 'Отсутствуют обязательные поля' });
+    }
+
+    await sendEmail({ to, subject, text, html });
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Ошибка отправки email:', error);
+    res.status(500).json({ error: 'Ошибка отправки email' });
+  }
+});
+
+// ================== START ==================
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
